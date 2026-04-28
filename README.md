@@ -20,6 +20,10 @@ PDF Reviewer is a full-stack PDF question-answering app. Upload a PDF, ask quest
 
 PDF Reviewer is built for document-grounded review workflows where the assistant should answer from the uploaded file, cite the source pages, and refuse unsupported questions instead of guessing. It keeps the retrieval layer lightweight by using a local TF-IDF index, making the app simple to run without a hosted vector database.
 
+## Agent Architecture
+
+This is an AI agent workflow, not just a static JavaScript app. The React frontend handles upload, chat, citations, and PDF viewing. The FastAPI backend performs PDF extraction, retrieval, prompt construction, Groq LLM generation, refusal detection, and citation metadata assembly.
+
 ## Tech Stack
 
 Frontend:

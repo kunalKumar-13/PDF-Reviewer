@@ -1,5 +1,15 @@
 import { useState, useRef, useEffect } from 'react';
-import { FileText, MessageSquare, Sparkles, RotateCcw } from 'lucide-react';
+import {
+  BrainCircuit,
+  Download,
+  FileText,
+  Globe2,
+  MessageSquare,
+  RotateCcw,
+  ShieldCheck,
+  Sparkles,
+  TestTube2,
+} from 'lucide-react';
 import PDFUploader from './components/PDFUploader';
 import ChatMessage from './components/ChatMessage';
 import ChatInput from './components/ChatInput';
@@ -123,6 +133,12 @@ export default function App() {
   };
 
   const hasDocument = uploadState === 'success' && documentId;
+  const sampleQueries = [
+    'What is PDF Reviewer built for?',
+    'What should the assistant do if the answer is not present in the PDF?',
+    'Que debe hacer el asistente cuando el usuario pregunta en otro idioma?',
+    'Who won the 2026 FIFA World Cup?',
+  ];
 
   return (
     <div className="h-screen flex flex-col bg-bg-primary">
@@ -135,10 +151,10 @@ export default function App() {
             </div>
             <div>
               <h1 className="text-lg font-semibold text-text-primary tracking-tight">
-                PDFChat
+                PDF Reviewer
               </h1>
               <p className="text-xs text-text-muted">
-                Grounded AI • Zero Hallucination
+                PDF-constrained AI agent • cited answers • refusals
               </p>
             </div>
           </div>
@@ -180,11 +196,12 @@ export default function App() {
             <div className="flex-1 flex flex-col items-center justify-center px-4">
               <div className="mb-8 text-center">
                 <h2 className="text-3xl font-bold text-text-primary mb-2 tracking-tight">
-                  Chat with your PDF
+                  PDF-Constrained Conversational Agent
                 </h2>
                 <p className="text-text-secondary text-sm max-w-md">
-                  Upload a document and ask questions. Every answer is grounded in
-                  your PDF with page-level citations.
+                  Upload a PDF and ask questions. The agent retrieves relevant
+                  excerpts, calls Groq for generation, cites source pages, and
+                  refuses anything not supported by the document.
                 </p>
               </div>
 
@@ -200,32 +217,77 @@ export default function App() {
               <div className="mt-10 grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-2xl w-full">
                 {[
                   {
-                    icon: '📄',
+                    icon: FileText,
                     title: 'Page Citations',
                     desc: 'Every answer cites exact pages',
                   },
                   {
-                    icon: '🛡️',
-                    title: 'Zero Hallucination',
-                    desc: "Refuses if answer isn't in the PDF",
+                    icon: ShieldCheck,
+                    title: 'Strict Refusal',
+                    desc: "Refuses when the PDF doesn't support an answer",
                   },
                   {
-                    icon: '💬',
-                    title: 'Multi-turn Chat',
-                    desc: 'Maintains context across questions',
+                    icon: Globe2,
+                    title: 'Multilingual',
+                    desc: 'Answers in the user language while staying grounded',
                   },
-                ].map((feature) => (
+                ].map((feature) => {
+                  const Icon = feature.icon;
+
+                  return (
                   <div
                     key={feature.title}
                     className="glass rounded-xl p-4 text-center hover:border-border-hover transition-colors"
                   >
-                    <div className="text-2xl mb-2">{feature.icon}</div>
+                    <Icon className="w-6 h-6 mx-auto mb-2 text-accent" />
                     <p className="text-sm font-medium text-text-primary">
                       {feature.title}
                     </p>
                     <p className="text-xs text-text-muted mt-1">{feature.desc}</p>
                   </div>
-                ))}
+                  );
+                })}
+              </div>
+
+              <div className="mt-6 max-w-2xl w-full grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="glass rounded-xl p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <BrainCircuit className="w-4 h-4 text-accent" />
+                    <p className="text-sm font-semibold text-text-primary">
+                      AI Agent Pipeline
+                    </p>
+                  </div>
+                  <p className="text-xs text-text-muted leading-relaxed">
+                    PyMuPDF extraction, TF-IDF retrieval, Groq generation, strict
+                    grounding prompt, refusal detection, and page citation metadata.
+                  </p>
+                </div>
+
+                <div className="glass rounded-xl p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <TestTube2 className="w-4 h-4 text-accent" />
+                    <p className="text-sm font-semibold text-text-primary">
+                      Reviewer Test Pack
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <a
+                      href="/samples/sample-review-policy.pdf"
+                      download
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-accent/10 text-accent text-xs hover:bg-accent/20 transition-colors"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      Sample PDF
+                    </a>
+                    <a
+                      href="/samples/test-cases.md"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-bg-tertiary text-text-secondary text-xs hover:text-text-primary transition-colors"
+                    >
+                      <FileText className="w-3.5 h-3.5" />
+                      Test cases
+                    </a>
+                  </div>
+                </div>
               </div>
             </div>
           ) : (
@@ -244,6 +306,19 @@ export default function App() {
                       <p className="text-text-muted text-xs mt-1">
                         Click on citation badges to view the referenced section in the PDF.
                       </p>
+                      <div className="mt-6 flex flex-wrap justify-center gap-2">
+                        {sampleQueries.map((query) => (
+                          <button
+                            key={query}
+                            type="button"
+                            onClick={() => handleSend(query)}
+                            disabled={isLoading}
+                            className="px-3 py-1.5 rounded-full bg-bg-tertiary text-xs text-text-secondary hover:text-text-primary hover:border-accent/30 border border-border transition-colors disabled:opacity-50"
+                          >
+                            {query}
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   )}
 
