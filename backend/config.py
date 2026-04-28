@@ -25,6 +25,15 @@ MAX_FILE_SIZE_MB: int = 50
 
 # --- CORS ---
 FRONTEND_ORIGIN: str = os.getenv("FRONTEND_ORIGIN", "http://localhost:5173")
+FRONTEND_ORIGINS: list[str] = [
+    origin.strip()
+    for origin in os.getenv("FRONTEND_ORIGINS", FRONTEND_ORIGIN).split(",")
+    if origin.strip()
+]
+CORS_ORIGIN_REGEX: str = os.getenv(
+    "CORS_ORIGIN_REGEX",
+    r"https://.*\.vercel\.app",
+)
 
 # --- Server ---
 HOST: str = "0.0.0.0"
