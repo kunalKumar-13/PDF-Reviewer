@@ -187,14 +187,14 @@ export default function App() {
       <div className="flex-1 flex overflow-hidden">
         {/* Chat Panel */}
         <main
-          className={`flex-1 flex flex-col overflow-hidden transition-all duration-300 ${
+          className={`flex-1 flex flex-col transition-all duration-300 ${
             showPdfViewer ? 'min-w-0' : ''
-          }`}
+          } ${hasDocument ? 'overflow-hidden' : 'overflow-y-auto'}`}
         >
           {!hasDocument ? (
             /* --- Upload View --- */
-            <div className="flex-1 flex flex-col items-center justify-center px-4">
-              <div className="mb-8 text-center">
+            <div className="min-h-full flex flex-col items-center px-4 py-8 sm:py-10">
+              <div className="mb-6 text-center">
                 <h2 className="text-3xl font-bold text-text-primary mb-2 tracking-tight">
                   PDF-Constrained Conversational Agent
                 </h2>
@@ -214,7 +214,7 @@ export default function App() {
               />
 
               {/* Feature highlights */}
-              <div className="mt-10 grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-2xl w-full">
+              <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-2xl w-full">
                 {[
                   {
                     icon: FileText,
@@ -249,7 +249,7 @@ export default function App() {
                 })}
               </div>
 
-              <div className="mt-6 max-w-2xl w-full grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="mt-6 max-w-2xl w-full grid grid-cols-1 sm:grid-cols-2 gap-4 pb-8">
                 <div className="glass rounded-xl p-4">
                   <div className="flex items-center gap-2 mb-2">
                     <BrainCircuit className="w-4 h-4 text-accent" />
