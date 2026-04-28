@@ -8,6 +8,7 @@ Orchestrates:
 5. Maintaining per-session conversation memory
 """
 
+import re
 import uuid
 from groq import Groq
 
@@ -67,6 +68,7 @@ Respond EXACTLY with this message and nothing else:
 - Do not add fluff or unnecessary elaboration.
 - Prefer bullet points for structured answers.
 - If the user asks for explanation, keep it grounded strictly in the document context.
+- If the user asks in a language other than English, answer in that same language while preserving the citation format.
 
 ## EDGE CASE HANDLING
 - If the question is partially answerable:
@@ -138,16 +140,20 @@ def _is_refusal(answer: str) -> bool:
     return refusal_text.lower() in normalized.lower()
 
 
-def _extract_citations(chunks: list[dict]) -> list[dict]:
+def _extract_citations(chunks: list[dict], answer: str) -> list[dict]:
     """Build citation objects from the retrieved chunks.
 
     Returns citation metadata for the frontend to display.
     """
+    cited_pages = {int(page) for page in re.findall(r"\bPage\s+(\d+)\b", answer)}
     citations = []
     seen_pages = set()
 
     for chunk in chunks:
         page = chunk["page_number"]
+        if cited_pages and page not in cited_pages:
+            continue
+
         section = chunk.get("section")
         snippet = chunk["text"][:150] + "..." if len(chunk["text"]) > 150 else chunk["text"]
 
@@ -231,7 +237,7 @@ def chat(
 
     # 7. Build response
     is_refusal = _is_refusal(answer)
-    citations = [] if is_refusal else _extract_citations(chunks)
+    citations = [] if is_refusal else _extract_citations(chunks, answer)
 
     return {
         "answer": answer,

@@ -14,6 +14,7 @@ PDF Reviewer is a full-stack PDF question-answering app. Upload a PDF, ask quest
 - Refuses to answer when the information is not present in the uploaded PDF.
 - Supports multi-turn chat sessions.
 - Opens the uploaded PDF beside the chat and jumps to cited pages.
+- Preserves grounding and citation structure when answering non-English questions.
 
 ## Why This Project
 
@@ -61,6 +62,11 @@ PDF-Reviewer/
       components/       # Upload, chat, PDF viewer, and UI components
     package.json        # Frontend scripts and dependencies
     vite.config.js      # Vite config and API proxy
+
+  samples/
+    sample-review-policy.pdf         # Reviewer-ready sample PDF
+    test-cases.md                    # 5 valid and 3 invalid test cases
+    sample-review-policy-source.md   # Source text for the sample PDF
 ```
 
 ## Prerequisites
@@ -134,6 +140,22 @@ http://localhost:8000/
 7. Click citation badges to open the PDF viewer on the referenced page.
 8. Use the reset button to upload a different PDF.
 
+## Reviewer Test Pack
+
+This repository includes the assignment testability assets:
+
+- `samples/sample-review-policy.pdf`: sample PDF to upload.
+- `samples/test-cases.md`: 5 valid queries, 3 invalid/out-of-scope queries, and expected behavior.
+- `samples/sample-review-policy-source.md`: readable source text used to generate the PDF.
+
+Recommended reviewer flow:
+
+1. Open the app.
+2. Upload `samples/sample-review-policy.pdf`.
+3. Run the valid queries in `samples/test-cases.md` and confirm answers include page citations.
+4. Run the invalid queries and confirm the assistant refuses instead of guessing.
+5. Try the Spanish query to verify same-language grounded behavior.
+
 ## API Endpoints
 
 ### `GET /api/health`
@@ -205,7 +227,7 @@ Deletes a processed document index.
 6. A user question is converted into the same search space.
 7. The backend retrieves the most relevant chunks.
 8. Groq receives only those chunks as context.
-9. The model answers with citations or refuses if the answer is not supported.
+9. The model answers with citations, responds in the user's language when possible, or refuses if the answer is not supported.
 10. The frontend displays the answer, citations, and PDF viewer.
 
 ## Notes
