@@ -199,12 +199,7 @@ async def serve_pdf(document_id: str):
 
 if __name__ == "__main__":
     import uvicorn
-    # Debug: print API key status on startup
-    key = config.GROQ_API_KEY
-    if key:
-        print(f"[DEBUG] GROQ_API_KEY loaded: {key[:8]}...{key[-4:]} (length: {len(key)})")
-    else:
-        print("[DEBUG] WARNING: GROQ_API_KEY is EMPTY — check your .env file")
+
     uvicorn.run(
         "main:app",
         host=config.HOST,

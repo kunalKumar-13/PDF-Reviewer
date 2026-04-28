@@ -27,7 +27,6 @@ def _get_groq() -> Groq:
     global _groq_client
     if _groq_client is None:
         key = config.GROQ_API_KEY
-        print(f"[DEBUG WORKER] Initializing Groq with key: {repr(key[:8])}...{repr(key[-4:])} (len={len(key)})")
         if not key:
             raise ValueError(
                 "GROQ_API_KEY not set. Copy backend/.env.example to backend/.env "
