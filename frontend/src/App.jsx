@@ -139,6 +139,14 @@ export default function App() {
     'Que debe hacer el asistente cuando el usuario pregunta en otro idioma?',
     'Who won the 2026 FIFA World Cup?',
   ];
+  const oaChecklist = [
+    'Accepts any PDF upload',
+    'Conversational Q&A',
+    'Answers only from PDF context',
+    'Explicit out-of-scope refusal',
+    'Page/section citations',
+    '5 valid + 3 invalid sample tests',
+  ];
 
   return (
     <div className="h-screen flex flex-col bg-bg-primary">
@@ -199,9 +207,9 @@ export default function App() {
                   PDF-Constrained Conversational Agent
                 </h2>
                 <p className="text-text-secondary text-sm max-w-md">
-                  Upload a PDF and ask questions. The agent retrieves relevant
-                  excerpts, calls Groq for generation, cites source pages, and
-                  refuses anything not supported by the document.
+                  Upload any PDF and ask questions. The backend AI agent retrieves
+                  relevant PDF excerpts, calls Groq for generation, cites source
+                  pages, and refuses anything not supported by the document.
                 </p>
               </div>
 
@@ -228,8 +236,8 @@ export default function App() {
                   },
                   {
                     icon: Globe2,
-                    title: 'Multilingual',
-                    desc: 'Answers in the user language while staying grounded',
+                    title: 'Multilingual Grounding',
+                    desc: 'Ask in another language; answers still come only from the PDF',
                   },
                 ].map((feature) => {
                   const Icon = feature.icon;
@@ -249,7 +257,7 @@ export default function App() {
                 })}
               </div>
 
-              <div className="mt-6 max-w-2xl w-full grid grid-cols-1 sm:grid-cols-2 gap-4 pb-8">
+              <div className="mt-6 max-w-2xl w-full grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="glass rounded-xl p-4">
                   <div className="flex items-center gap-2 mb-2">
                     <BrainCircuit className="w-4 h-4 text-accent" />
@@ -258,8 +266,9 @@ export default function App() {
                     </p>
                   </div>
                   <p className="text-xs text-text-muted leading-relaxed">
-                    PyMuPDF extraction, TF-IDF retrieval, Groq generation, strict
-                    grounding prompt, refusal detection, and page citation metadata.
+                    This is not just a JavaScript UI. FastAPI runs PDF extraction,
+                    TF-IDF retrieval, Groq generation, strict grounding, refusal
+                    detection, and citation metadata.
                   </p>
                 </div>
 
@@ -267,9 +276,13 @@ export default function App() {
                   <div className="flex items-center gap-2 mb-3">
                     <TestTube2 className="w-4 h-4 text-accent" />
                     <p className="text-sm font-semibold text-text-primary">
-                      Reviewer Test Pack
+                      OA Test Pack
                     </p>
                   </div>
+                  <p className="text-xs text-text-muted leading-relaxed mb-3">
+                    Download the sample PDF and test cases to verify 5 valid
+                    queries, 3 invalid refusals, and one multilingual grounded answer.
+                  </p>
                   <div className="flex flex-wrap gap-2">
                     <a
                       href="/samples/sample-review-policy.pdf"
@@ -288,6 +301,30 @@ export default function App() {
                     </a>
                   </div>
                 </div>
+              </div>
+
+              <div className="mt-6 max-w-2xl w-full glass rounded-xl p-4 pb-5 mb-8">
+                <div className="flex items-center gap-2 mb-3">
+                  <ShieldCheck className="w-4 h-4 text-success" />
+                  <p className="text-sm font-semibold text-text-primary">
+                    OA Requirement Coverage
+                  </p>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {oaChecklist.map((item) => (
+                    <div
+                      key={item}
+                      className="rounded-lg border border-border bg-bg-tertiary/40 px-3 py-2 text-xs text-text-secondary"
+                    >
+                      {item}
+                    </div>
+                  ))}
+                </div>
+                <p className="mt-3 text-[11px] text-text-muted leading-relaxed">
+                  Multilingual support means answerable questions can be asked in
+                  another language and the response follows that language, but the
+                  agent still uses only the uploaded PDF as evidence.
+                </p>
               </div>
             </div>
           ) : (
