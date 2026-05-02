@@ -385,12 +385,16 @@ export default function App() {
           ) : (
             /* --- Chat View --- */
             <div className="flex-1 flex min-h-0">
-              <aside className="hidden 2xl:flex w-72 flex-shrink-0 flex-col border-r border-border bg-bg-secondary/40">
+              <aside
+                className={`${
+                  showPdfViewer ? 'hidden' : 'hidden lg:flex'
+                } w-56 xl:w-64 flex-shrink-0 flex-col border-r border-border bg-bg-secondary/40`}
+              >
                 <div className="border-b border-border p-4">
                   <div className="flex items-center gap-2">
                     <MessageSquare className="w-4 h-4 text-accent" />
                     <p className="text-sm font-semibold text-text-primary">
-                      Conversation History
+                      Recent Questions
                     </p>
                   </div>
                   <p className="mt-1 text-xs text-text-muted">
@@ -415,7 +419,7 @@ export default function App() {
                   )}
                 </div>
 
-                <div className="border-t border-border p-4">
+                <div className="max-h-[45%] flex-shrink-0 overflow-y-auto border-t border-border p-4">
                   <div className="flex items-center gap-2 mb-2">
                     <BrainCircuit className="w-4 h-4 text-accent" />
                     <p className="text-sm font-semibold text-text-primary">
