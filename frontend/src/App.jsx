@@ -1,14 +1,12 @@
 import { useState, useRef, useEffect } from 'react';
 import {
   BrainCircuit,
-  Download,
   FileText,
   Globe2,
   MessageSquare,
   RotateCcw,
   ShieldCheck,
   Sparkles,
-  TestTube2,
 } from 'lucide-react';
 import PDFUploader from './components/PDFUploader';
 import ChatMessage from './components/ChatMessage';
@@ -187,10 +185,10 @@ export default function App() {
     .reverse()
     .find((msg) => msg.role === 'assistant' && msg.debug)?.debug;
   const sampleQueries = [
-    'What is PDF Reviewer built for?',
-    'What should the assistant do if the answer is not present in the PDF?',
-    'Que debe hacer el asistente cuando el usuario pregunta en otro idioma?',
-    'Who won the 2026 FIFA World Cup?',
+    'Summarize this document.',
+    'What are the key points?',
+    'Which pages support the main answer?',
+    'What information is missing from the PDF?',
   ];
 
   return (
@@ -273,14 +271,14 @@ export default function App() {
           {!hasDocument ? (
             /* --- Upload View --- */
             <div className="min-h-full flex flex-col items-center px-4 py-8 sm:py-10">
-              <div className="mb-6 text-center">
-                <h2 className="text-3xl font-bold text-text-primary mb-2 tracking-tight">
-                  PDF-Constrained Conversational Agent
+              <div className="mb-7 max-w-3xl text-center">
+                <h2 className="text-3xl sm:text-4xl font-bold text-text-primary mb-3 tracking-tight">
+                  PDF Conversational Agent
                 </h2>
-                <p className="text-text-secondary text-sm max-w-md">
-                  Upload any PDF and ask questions. The backend AI agent retrieves
-                  relevant PDF excerpts, calls Groq for generation, cites source
-                  pages, and refuses anything not supported by the document.
+                <p className="mx-auto max-w-2xl text-text-secondary text-sm sm:text-base leading-relaxed">
+                  Upload a PDF, ask natural questions, and get grounded answers
+                  with page citations. The assistant retrieves evidence from the
+                  document first and refuses unsupported questions.
                 </p>
               </div>
 
@@ -294,23 +292,23 @@ export default function App() {
                 disabledMessage={backendMessage}
               />
 
-              {/* Feature highlights */}
+              {/* Pipeline highlights */}
               <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-2xl w-full">
                 {[
                   {
                     icon: FileText,
-                    title: 'Page Citations',
-                    desc: 'Every answer cites exact pages',
+                    title: '1. Upload',
+                    desc: 'Text is extracted, cleaned, chunked, and indexed locally',
+                  },
+                  {
+                    icon: BrainCircuit,
+                    title: '2. Retrieve',
+                    desc: 'Queries are rewritten and matched against relevant PDF chunks',
                   },
                   {
                     icon: ShieldCheck,
-                    title: 'Strict Refusal',
-                    desc: "Refuses when the PDF doesn't support an answer",
-                  },
-                  {
-                    icon: Globe2,
-                    title: 'Multilingual Grounding',
-                    desc: 'Ask in another language; answers still come only from the PDF',
+                    title: '3. Answer',
+                    desc: 'Responses stay grounded, cite pages, or refuse clearly',
                   },
                 ].map((feature) => {
                   const Icon = feature.icon;
@@ -333,46 +331,29 @@ export default function App() {
               <div className="mt-6 max-w-2xl w-full grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="glass rounded-xl p-4">
                   <div className="flex items-center gap-2 mb-2">
-                    <BrainCircuit className="w-4 h-4 text-accent" />
+                    <MessageSquare className="w-4 h-4 text-accent" />
                     <p className="text-sm font-semibold text-text-primary">
-                      AI Agent Pipeline
+                      Stateful Chat
                     </p>
                   </div>
                   <p className="text-xs text-text-muted leading-relaxed">
-                    This is not just a JavaScript UI. FastAPI runs PDF extraction,
-                    TF-IDF retrieval, Groq generation, strict grounding, refusal
-                    detection, and citation metadata.
+                    The backend keeps recent turns in session memory, rewrites
+                    follow-up questions, and uses that context only to improve
+                    document retrieval.
                   </p>
                 </div>
 
                 <div className="glass rounded-xl p-4">
-                  <div className="flex items-center gap-2 mb-3">
-                    <TestTube2 className="w-4 h-4 text-accent" />
+                  <div className="flex items-center gap-2 mb-2">
+                    <Globe2 className="w-4 h-4 text-accent" />
                     <p className="text-sm font-semibold text-text-primary">
-                      Sample Test Pack
+                      Multilingual Grounding
                     </p>
                   </div>
-                  <p className="text-xs text-text-muted leading-relaxed mb-3">
-                    Download the sample PDF and test cases to verify 5 valid
-                    queries, 3 invalid refusals, and one multilingual grounded answer.
+                  <p className="text-xs text-text-muted leading-relaxed">
+                    Ask answerable questions in another language. The response
+                    follows that language while still using only PDF evidence.
                   </p>
-                  <div className="flex flex-wrap gap-2">
-                    <a
-                      href="/samples/sample-review-policy.pdf"
-                      download
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-accent/10 text-accent text-xs hover:bg-accent/20 transition-colors"
-                    >
-                      <Download className="w-3.5 h-3.5" />
-                      Sample PDF
-                    </a>
-                    <a
-                      href="/samples/test-cases.md"
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-bg-tertiary text-text-secondary text-xs hover:text-text-primary transition-colors"
-                    >
-                      <FileText className="w-3.5 h-3.5" />
-                      Test cases
-                    </a>
-                  </div>
                 </div>
               </div>
 

@@ -12,7 +12,9 @@ PDF Reviewer is a full-stack PDF question-answering app. Upload a PDF, ask quest
 - Uses Groq to generate answers strictly from the retrieved PDF context.
 - Returns citations for the pages used in each answer.
 - Refuses to answer when the information is not present in the uploaded PDF.
-- Supports multi-turn chat sessions.
+- Supports short multi-turn chat sessions with backend memory.
+- Rewrites follow-up questions into standalone retrieval queries.
+- Reranks retrieved chunks by similarity and keyword overlap.
 - Opens the uploaded PDF beside the chat and jumps to cited pages.
 - Preserves grounding and citation structure when answering supported non-English questions from the PDF.
 
@@ -22,7 +24,21 @@ PDF Reviewer is built for document-grounded review workflows where the assistant
 
 ## Agent Architecture
 
-This is an AI agent workflow, not just a static JavaScript app. The React frontend handles upload, chat, citations, and PDF viewing. The FastAPI backend performs PDF extraction, retrieval, prompt construction, Groq LLM generation, refusal detection, and citation metadata assembly.
+This is an AI agent workflow, not just a static JavaScript app. The React frontend handles upload, chat, citations, and PDF viewing. The FastAPI backend performs PDF extraction, retrieval, query rewriting, prompt construction, Groq LLM generation, refusal detection, and citation metadata assembly.
+
+## RAG Query Pipeline
+
+The chat flow is intentionally strict and document-grounded:
+
+1. The frontend sends the user question with the current `document_id` and `session_id`.
+2. The backend loads the recent session memory for follow-up context.
+3. Short lookups and follow-up questions are rewritten into standalone retrieval queries.
+4. The local TF-IDF index retrieves candidate chunks from the active PDF.
+5. Retrieval reranks candidates by cosine similarity plus keyword overlap and filters weak matches.
+6. If no reliable chunks are found, the backend returns the fixed refusal message without using outside knowledge.
+7. Groq receives only the retrieved PDF excerpts, recent conversation turns, and strict grounding rules.
+8. The backend normalizes the response, attaches page citations, and exposes retrieval debug metadata.
+9. The frontend renders the grounded answer, clickable page sources, recent questions, and retrieval debug panel.
 
 ## Tech Stack
 
@@ -144,22 +160,6 @@ http://localhost:8000/
 7. Click citation badges to open the PDF viewer on the referenced page.
 8. Use the reset button to upload a different PDF.
 
-## Reviewer Test Pack
-
-This repository includes the assignment testability assets:
-
-- `samples/sample-review-policy.pdf`: sample PDF to upload.
-- `samples/test-cases.md`: 5 valid queries, 3 invalid/out-of-scope queries, and expected behavior.
-- `samples/sample-review-policy-source.md`: readable source text used to generate the PDF.
-
-Recommended reviewer flow:
-
-1. Open the app.
-2. Upload `samples/sample-review-policy.pdf`.
-3. Run the valid queries in `samples/test-cases.md` and confirm answers include page citations.
-4. Run the invalid queries and confirm the assistant refuses instead of guessing.
-5. Try the Spanish query to verify same-language grounded behavior.
-
 ## API Endpoints
 
 ### `GET /api/health`
@@ -225,14 +225,14 @@ Deletes a processed document index.
 
 1. The user uploads a PDF.
 2. The backend stores the PDF under `backend/uploads`.
-3. PyMuPDF extracts text from each page.
-4. The text is chunked into overlapping sections.
-5. The chunks are indexed using TF-IDF.
-6. A user question is converted into the same search space.
-7. The backend retrieves the most relevant chunks.
-8. Groq receives only those chunks as context.
-9. The model answers with citations, responds in the user's language when possible, or refuses if the answer is not supported.
-10. The frontend displays the answer, citations, and PDF viewer.
+3. PyMuPDF extracts readable page text, including cleanup for letter-spaced resume headings.
+4. The text is chunked into overlapping sections with page metadata.
+5. The chunks are indexed using TF-IDF with compact aliases for better name matching.
+6. A user question is rewritten when needed and converted into the same search space.
+7. The backend retrieves, filters, reranks, and merges the most relevant chunks.
+8. If retrieval fails, the assistant returns the fixed refusal message.
+9. Groq receives only the retrieved PDF context and recent session memory.
+10. The frontend displays the answer, citations, recent questions, retrieval debug data, and PDF viewer.
 
 ## Notes
 
