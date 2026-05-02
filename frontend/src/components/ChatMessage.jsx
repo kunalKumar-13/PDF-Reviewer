@@ -13,6 +13,10 @@ import ReactMarkdown from 'react-markdown';
  */
 export default function ChatMessage({ role, content, citations = [], isRefusal = false, onCitationClick }) {
   const isUser = role === 'user';
+  const displayContent = !isUser && citations.length > 0
+    ? content.split(/\n\s*Sources\s*:/i)[0].trim()
+    : content;
+
   const handleDownload = () => {
     const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
     const url = URL.createObjectURL(blob);
@@ -29,12 +33,12 @@ export default function ChatMessage({ role, content, citations = [], isRefusal =
     >
       <div
         className={`
-          relative max-w-[82%] rounded-2xl px-5 py-3.5
+          relative min-w-0 rounded-2xl px-5 py-3.5 break-words
           ${isUser
-            ? 'bg-user-bubble text-white rounded-br-md'
+            ? 'max-w-[78%] bg-user-bubble text-white rounded-br-md'
             : isRefusal
-              ? 'glass border-error/20 rounded-bl-md'
-              : 'glass rounded-bl-md'
+              ? 'w-full max-w-[760px] glass border-error/20 rounded-bl-md'
+              : 'w-full max-w-[760px] glass rounded-bl-md'
           }
         `}
       >
@@ -42,22 +46,21 @@ export default function ChatMessage({ role, content, citations = [], isRefusal =
           <button
             type="button"
             onClick={handleDownload}
-            className="absolute right-3 top-2 inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] text-text-muted opacity-70 hover:bg-bg-tertiary hover:text-text-primary hover:opacity-100 transition-colors"
+            className="absolute right-3 top-2 inline-flex h-7 w-7 items-center justify-center rounded-lg text-text-muted opacity-70 hover:bg-bg-tertiary hover:text-text-primary hover:opacity-100 transition-colors"
             title="Download this response"
           >
             <Download className="w-3 h-3" />
-            Download
           </button>
         )}
 
         {/* Message content */}
-        <div className={`text-sm leading-relaxed ${isUser ? 'text-white' : 'text-text-primary pr-16'}`}>
+        <div className={`text-sm leading-relaxed ${isUser ? 'text-white' : 'text-text-primary pr-8'}`}>
           {isUser ? (
             <p>{content}</p>
           ) : (
             <ReactMarkdown
               components={{
-                p: ({ children }) => <p className="mb-2 last:mb-0 whitespace-pre-wrap">{children}</p>,
+                p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
                 ul: ({ children }) => <ul className="list-disc pl-5 mb-2 space-y-1">{children}</ul>,
                 ol: ({ children }) => <ol className="list-decimal list-inside mb-2 space-y-1">{children}</ol>,
                 li: ({ children }) => <li className="text-text-primary leading-relaxed">{children}</li>,
@@ -69,7 +72,7 @@ export default function ChatMessage({ role, content, citations = [], isRefusal =
                 ),
               }}
             >
-              {content}
+              {displayContent}
             </ReactMarkdown>
           )}
         </div>

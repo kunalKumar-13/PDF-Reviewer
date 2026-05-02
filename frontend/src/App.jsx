@@ -39,7 +39,7 @@ export default function App() {
 
   // --- Auto-scroll on new messages ---
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
   }, [messages, isLoading]);
 
   // --- Warm Backend ---
@@ -385,11 +385,7 @@ export default function App() {
           ) : (
             /* --- Chat View --- */
             <div className="flex-1 flex min-h-0">
-              <aside
-                className={`${
-                  showPdfViewer ? 'hidden' : 'hidden lg:flex'
-                } w-72 flex-shrink-0 flex-col border-r border-border bg-bg-secondary/40`}
-              >
+              <aside className="hidden 2xl:flex w-72 flex-shrink-0 flex-col border-r border-border bg-bg-secondary/40">
                 <div className="border-b border-border p-4">
                   <div className="flex items-center gap-2">
                     <MessageSquare className="w-4 h-4 text-accent" />
@@ -468,7 +464,7 @@ export default function App() {
               <section className="flex-1 flex flex-col min-w-0">
                 {/* Messages */}
                 <div className="flex-1 overflow-y-auto px-4 py-6">
-                  <div className="max-w-3xl mx-auto space-y-4">
+                  <div className="max-w-4xl mx-auto space-y-4 pb-6">
                     {/* Welcome message */}
                     {messages.length === 0 && (
                       <div className="text-center py-12 animate-fade-in-up">
@@ -516,7 +512,7 @@ export default function App() {
 
                 {/* Input */}
                 <div className="flex-shrink-0 px-4 pb-4 pt-2">
-                  <div className="max-w-3xl mx-auto">
+                  <div className="max-w-4xl mx-auto">
                     <ChatInput
                       onSend={handleSend}
                       disabled={!hasDocument}
@@ -534,7 +530,7 @@ export default function App() {
 
         {/* PDF Viewer Panel (side-by-side) */}
         {showPdfViewer && hasDocument && (
-          <aside className="w-[42%] min-w-[360px] max-w-[560px] flex-shrink-0">
+          <aside className="w-[42%] min-w-[340px] max-w-[540px] flex-shrink-0">
             <PDFViewer
               documentId={documentId}
               activeCitation={activeCitation}
