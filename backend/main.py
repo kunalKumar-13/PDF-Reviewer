@@ -7,6 +7,8 @@ Endpoints:
   DELETE /api/document — Delete a processed document
 """
 
+import asyncio
+
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
@@ -96,13 +98,31 @@ async def upload_pdf(file: UploadFile = File(...)):
         )
 
     try:
+        cached = pdf_processor.get_cached_document(content)
+        if cached and vector_store.document_exists(cached["document_id"]):
+            stats = vector_store.get_document_stats(cached["document_id"]) or {}
+            total_chunks = stats.get("total_chunks", cached.get("total_chunks", 0))
+            return UploadResponse(
+                status="success",
+                message=(
+                    f"PDF loaded from cache. {cached['total_pages']} pages, "
+                    f"{total_chunks} chunks indexed."
+                ),
+                document_id=cached["document_id"],
+                total_pages=cached["total_pages"],
+                total_chunks=total_chunks,
+            )
+
         # Process the PDF: extract → chunk → embed
-        document_id, chunks, total_pages = pdf_processor.process_pdf(
-            content, file.filename
+        document_id, chunks, total_pages = await asyncio.to_thread(
+            pdf_processor.process_pdf,
+            content,
+            file.filename,
+            cached["document_id"] if cached else None,
         )
 
         # Store chunks in vector database
-        total_chunks = vector_store.store_chunks(chunks)
+        total_chunks = await asyncio.to_thread(vector_store.store_chunks, chunks)
 
         return UploadResponse(
             status="success",
@@ -143,7 +163,8 @@ async def chat_with_pdf(request: ChatRequest):
         )
 
     try:
-        result = chat_engine.chat(
+        result = await asyncio.to_thread(
+            chat_engine.chat,
             question=request.question,
             document_id=request.document_id,
             session_id=request.session_id,
@@ -161,6 +182,7 @@ async def chat_with_pdf(request: ChatRequest):
             ],
             session_id=result["session_id"],
             is_refusal=result["is_refusal"],
+            debug=result.get("debug"),
         )
 
     except ValueError as e:
@@ -177,6 +199,7 @@ async def delete_document(document_id: str):
     """Delete a processed document and its chunks from the vector store."""
     deleted = vector_store.delete_document(document_id)
     if deleted:
+        pdf_processor.delete_document_files(document_id)
         return {"status": "ok", "message": "Document deleted."}
     else:
         raise HTTPException(

@@ -1,4 +1,4 @@
-import { BookOpen } from 'lucide-react';
+import { BookOpen, Download } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 
 /**
@@ -13,6 +13,15 @@ import ReactMarkdown from 'react-markdown';
  */
 export default function ChatMessage({ role, content, citations = [], isRefusal = false, onCitationClick }) {
   const isUser = role === 'user';
+  const handleDownload = () => {
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'pdf-reviewer-response.txt';
+    link.click();
+    URL.revokeObjectURL(url);
+  };
 
   return (
     <div
@@ -29,6 +38,20 @@ export default function ChatMessage({ role, content, citations = [], isRefusal =
           }
         `}
       >
+        {!isUser && (
+          <div className="mb-2 flex justify-end">
+            <button
+              type="button"
+              onClick={handleDownload}
+              className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] text-text-muted hover:bg-bg-tertiary hover:text-text-primary transition-colors"
+              title="Download this response"
+            >
+              <Download className="w-3 h-3" />
+              Download
+            </button>
+          </div>
+        )}
+
         {/* Message content */}
         <div className={`text-sm leading-relaxed ${isUser ? 'text-white' : 'text-text-primary'}`}>
           {isUser ? (

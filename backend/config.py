@@ -15,6 +15,10 @@ GENERATION_MODEL: str = "llama-3.3-70b-versatile"
 CHUNK_SIZE: int = 800        # characters per chunk
 CHUNK_OVERLAP: int = 200     # overlap between consecutive chunks
 TOP_K_RESULTS: int = 5       # number of relevant chunks to retrieve per query
+RETRIEVAL_CANDIDATE_MULTIPLIER: int = 4
+MIN_SIMILARITY_SCORE: float = 0.02
+KEYWORD_OVERLAP_WEIGHT: float = 0.15
+MEMORY_TURNS: int = 5        # user/assistant turns retained per backend session
 
 # --- Storage ---
 STORE_DIR: str = os.path.join(os.path.dirname(__file__), "store")

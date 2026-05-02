@@ -15,7 +15,7 @@ import ChatMessage from './components/ChatMessage';
 import ChatInput from './components/ChatInput';
 import TypingIndicator from './components/TypingIndicator';
 import PDFViewer from './components/PDFViewer';
-import { uploadPDF, sendMessage } from './api';
+import { uploadPDF, sendMessage, healthCheck } from './api';
 
 export default function App() {
   // --- State ---
@@ -27,6 +27,8 @@ export default function App() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadMessage, setUploadMessage] = useState('');
   const [documentInfo, setDocumentInfo] = useState(null);
+  const [backendStatus, setBackendStatus] = useState('checking');
+  const [backendMessage, setBackendMessage] = useState('Waking backend...');
 
   // PDF Viewer state
   const [showPdfViewer, setShowPdfViewer] = useState(false);
@@ -39,11 +41,57 @@ export default function App() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isLoading]);
 
+  // --- Warm Backend ---
+  useEffect(() => {
+    let cancelled = false;
+    const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+    const warmBackend = async () => {
+      for (let attempt = 1; attempt <= 6; attempt += 1) {
+        try {
+          await healthCheck();
+          if (!cancelled) {
+            setBackendStatus('ready');
+            setBackendMessage('Backend ready');
+          }
+          return;
+        } catch {
+          if (!cancelled) {
+            setBackendStatus('waking');
+            setBackendMessage(
+              attempt === 1
+                ? 'Waking backend. This can take a few seconds on Render free tier.'
+                : `Still waking backend... retry ${attempt}/6`
+            );
+          }
+          await wait(4000);
+        }
+      }
+
+      if (!cancelled) {
+        setBackendStatus('error');
+        setBackendMessage('Backend is slow to wake. Refresh or try again shortly.');
+      }
+    };
+
+    warmBackend();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   // --- PDF Upload ---
   const handleUpload = async (file) => {
+    if (backendStatus !== 'ready') {
+      setUploadState('error');
+      setUploadMessage(backendMessage);
+      return;
+    }
+
     setUploadState('uploading');
     setUploadProgress(0);
-    setUploadMessage('Uploading and processing...');
+    setUploadMessage('Processing PDF...');
 
     try {
       const result = await uploadPDF(file, (progress) => {
@@ -92,6 +140,7 @@ export default function App() {
         content: result.answer,
         citations: result.citations || [],
         isRefusal: result.is_refusal || false,
+        debug: result.debug || null,
       };
       setMessages((prev) => [...prev, agentMsg]);
     } catch (err) {
@@ -133,19 +182,16 @@ export default function App() {
   };
 
   const hasDocument = uploadState === 'success' && documentId;
+  const backendReady = backendStatus === 'ready';
+  const chatHistory = messages.filter((msg) => msg.role === 'user');
+  const latestDebug = [...messages]
+    .reverse()
+    .find((msg) => msg.role === 'assistant' && msg.debug)?.debug;
   const sampleQueries = [
     'What is PDF Reviewer built for?',
     'What should the assistant do if the answer is not present in the PDF?',
     'Que debe hacer el asistente cuando el usuario pregunta en otro idioma?',
     'Who won the 2026 FIFA World Cup?',
-  ];
-  const oaChecklist = [
-    'Accepts any PDF upload',
-    'Conversational Q&A',
-    'Answers only from PDF context',
-    'Explicit out-of-scope refusal',
-    'Page/section citations',
-    '5 valid + 3 invalid sample tests',
   ];
 
   return (
@@ -168,6 +214,19 @@ export default function App() {
           </div>
 
           <div className="flex items-center gap-3">
+            <div
+              className={`hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg border ${
+                backendReady
+                  ? 'bg-success/10 border-success/20 text-success'
+                  : 'bg-citation-bg border-amber-500/20 text-citation'
+              }`}
+              title={backendMessage}
+            >
+              <span className="text-xs font-medium">
+                {backendReady ? 'Backend ready' : 'Waking backend...'}
+              </span>
+            </div>
+
             {hasDocument && documentInfo && (
               <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-success/10 border border-success/20">
                 <FileText className="w-3.5 h-3.5 text-success" />
@@ -219,6 +278,8 @@ export default function App() {
                 uploadProgress={uploadProgress}
                 uploadMessage={uploadMessage}
                 documentInfo={documentInfo}
+                disabled={!backendReady}
+                disabledMessage={backendMessage}
               />
 
               {/* Feature highlights */}
@@ -276,7 +337,7 @@ export default function App() {
                   <div className="flex items-center gap-2 mb-3">
                     <TestTube2 className="w-4 h-4 text-accent" />
                     <p className="text-sm font-semibold text-text-primary">
-                      OA Test Pack
+                      Sample Test Pack
                     </p>
                   </div>
                   <p className="text-xs text-text-muted leading-relaxed mb-3">
@@ -303,95 +364,155 @@ export default function App() {
                 </div>
               </div>
 
-              <div className="mt-6 max-w-2xl w-full glass rounded-xl p-4 pb-5 mb-8">
-                <div className="flex items-center gap-2 mb-3">
-                  <ShieldCheck className="w-4 h-4 text-success" />
-                  <p className="text-sm font-semibold text-text-primary">
-                    OA Requirement Coverage
-                  </p>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {oaChecklist.map((item) => (
-                    <div
-                      key={item}
-                      className="rounded-lg border border-border bg-bg-tertiary/40 px-3 py-2 text-xs text-text-secondary"
-                    >
-                      {item}
-                    </div>
-                  ))}
-                </div>
-                <p className="mt-3 text-[11px] text-text-muted leading-relaxed">
-                  Multilingual support means answerable questions can be asked in
-                  another language and the response follows that language, but the
-                  agent still uses only the uploaded PDF as evidence.
-                </p>
-              </div>
+              <p className="mt-5 max-w-2xl text-center text-[11px] text-text-muted leading-relaxed">
+                Multilingual support means answerable questions can be asked in
+                another language and the response follows that language, while
+                still using only the uploaded PDF as evidence.
+              </p>
             </div>
           ) : (
             /* --- Chat View --- */
-            <>
-              {/* Messages */}
-              <div className="flex-1 overflow-y-auto px-4 py-6">
-                <div className="max-w-3xl mx-auto space-y-4">
-                  {/* Welcome message */}
-                  {messages.length === 0 && (
-                    <div className="text-center py-12 animate-fade-in-up">
-                      <MessageSquare className="w-10 h-10 text-accent/40 mx-auto mb-3" />
-                      <p className="text-text-secondary text-sm">
-                        Your PDF is ready. Ask anything about the document.
-                      </p>
-                      <p className="text-text-muted text-xs mt-1">
-                        Click on citation badges to view the referenced section in the PDF.
-                      </p>
-                      <div className="mt-6 flex flex-wrap justify-center gap-2">
-                        {sampleQueries.map((query) => (
-                          <button
-                            key={query}
-                            type="button"
-                            onClick={() => handleSend(query)}
-                            disabled={isLoading}
-                            className="px-3 py-1.5 rounded-full bg-bg-tertiary text-xs text-text-secondary hover:text-text-primary hover:border-accent/30 border border-border transition-colors disabled:opacity-50"
+            <div className="flex-1 flex min-h-0">
+              <aside className="hidden lg:flex w-72 flex-shrink-0 flex-col border-r border-border bg-bg-secondary/40">
+                <div className="border-b border-border p-4">
+                  <div className="flex items-center gap-2">
+                    <MessageSquare className="w-4 h-4 text-accent" />
+                    <p className="text-sm font-semibold text-text-primary">
+                      Conversation History
+                    </p>
+                  </div>
+                  <p className="mt-1 text-xs text-text-muted">
+                    Last {Math.min(chatHistory.length, 5)} user turns kept in backend memory.
+                  </p>
+                </div>
+
+                <div className="flex-1 overflow-y-auto p-3 space-y-2">
+                  {chatHistory.length === 0 ? (
+                    <p className="rounded-lg border border-border bg-bg-tertiary/40 p-3 text-xs text-text-muted">
+                      Ask a question to start a stateful session.
+                    </p>
+                  ) : (
+                    chatHistory.slice(-5).map((msg, idx) => (
+                      <div
+                        key={`${msg.content}-${idx}`}
+                        className="rounded-lg border border-border bg-bg-tertiary/40 p-3 text-xs text-text-secondary"
+                      >
+                        {msg.content}
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                <div className="border-t border-border p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <BrainCircuit className="w-4 h-4 text-accent" />
+                    <p className="text-sm font-semibold text-text-primary">
+                      Retrieval Debug
+                    </p>
+                  </div>
+                  {latestDebug ? (
+                    <div className="space-y-3">
+                      <div>
+                        <p className="text-[11px] uppercase tracking-wide text-text-muted">
+                          Rewritten query
+                        </p>
+                        <p className="mt-1 rounded-lg bg-bg-tertiary/60 p-2 text-xs text-text-secondary">
+                          {latestDebug.rewritten_query}
+                        </p>
+                      </div>
+                      <div className="space-y-2">
+                        {(latestDebug.retrieved_chunks || []).map((chunk, idx) => (
+                          <div
+                            key={`${chunk.page}-${idx}`}
+                            className="rounded-lg border border-border bg-bg-tertiary/40 p-2"
                           >
-                            {query}
-                          </button>
+                            <div className="mb-1 flex items-center justify-between gap-2">
+                              <span className="text-xs font-medium text-citation">
+                                Page {chunk.page}
+                              </span>
+                              <span className="text-[10px] text-text-muted">
+                                sim {chunk.similarity.toFixed(2)} • score {chunk.combined_score.toFixed(2)}
+                              </span>
+                            </div>
+                            <p className="text-[11px] leading-relaxed text-text-muted">
+                              {chunk.text_snippet}
+                            </p>
+                          </div>
                         ))}
                       </div>
                     </div>
+                  ) : (
+                    <p className="rounded-lg border border-border bg-bg-tertiary/40 p-3 text-xs text-text-muted">
+                      Debug details appear after the first answer.
+                    </p>
                   )}
+                </div>
+              </aside>
 
-                  {/* Message list */}
-                  {messages.map((msg, idx) => (
-                    <ChatMessage
-                      key={idx}
-                      role={msg.role}
-                      content={msg.content}
-                      citations={msg.citations}
-                      isRefusal={msg.isRefusal}
-                      onCitationClick={handleCitationClick}
+              <section className="flex-1 flex flex-col min-w-0">
+                {/* Messages */}
+                <div className="flex-1 overflow-y-auto px-4 py-6">
+                  <div className="max-w-3xl mx-auto space-y-4">
+                    {/* Welcome message */}
+                    {messages.length === 0 && (
+                      <div className="text-center py-12 animate-fade-in-up">
+                        <MessageSquare className="w-10 h-10 text-accent/40 mx-auto mb-3" />
+                        <p className="text-text-secondary text-sm">
+                          Your PDF is ready. Ask anything about the document.
+                        </p>
+                        <p className="text-text-muted text-xs mt-1">
+                          Click on citation badges to view the referenced section in the PDF.
+                        </p>
+                        <div className="mt-6 flex flex-wrap justify-center gap-2">
+                          {sampleQueries.map((query) => (
+                            <button
+                              key={query}
+                              type="button"
+                              onClick={() => handleSend(query)}
+                              disabled={isLoading || !backendReady}
+                              className="px-3 py-1.5 rounded-full bg-bg-tertiary text-xs text-text-secondary hover:text-text-primary hover:border-accent/30 border border-border transition-colors disabled:opacity-50"
+                            >
+                              {query}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Message list */}
+                    {messages.map((msg, idx) => (
+                      <ChatMessage
+                        key={idx}
+                        role={msg.role}
+                        content={msg.content}
+                        citations={msg.citations}
+                        isRefusal={msg.isRefusal}
+                        onCitationClick={handleCitationClick}
+                      />
+                    ))}
+
+                    {/* Typing indicator */}
+                    {isLoading && <TypingIndicator />}
+
+                    <div ref={messagesEndRef} />
+                  </div>
+                </div>
+
+                {/* Input */}
+                <div className="flex-shrink-0 px-4 pb-4 pt-2">
+                  <div className="max-w-3xl mx-auto">
+                    <ChatInput
+                      onSend={handleSend}
+                      disabled={!hasDocument || !backendReady}
+                      isLoading={isLoading}
                     />
-                  ))}
-
-                  {/* Typing indicator */}
-                  {isLoading && <TypingIndicator />}
-
-                  <div ref={messagesEndRef} />
+                    <p className="text-center text-[10px] text-text-muted mt-2">
+                      Answers are strictly grounded in the uploaded PDF. Not general knowledge.
+                    </p>
+                  </div>
                 </div>
-              </div>
-
-              {/* Input */}
-              <div className="flex-shrink-0 px-4 pb-4 pt-2">
-                <div className="max-w-3xl mx-auto">
-                  <ChatInput
-                    onSend={handleSend}
-                    disabled={!hasDocument}
-                    isLoading={isLoading}
-                  />
-                  <p className="text-center text-[10px] text-text-muted mt-2">
-                    Answers are strictly grounded in the uploaded PDF. Not general knowledge.
-                  </p>
-                </div>
-              </div>
-            </>
+              </section>
+            </div>
           )}
         </main>
 

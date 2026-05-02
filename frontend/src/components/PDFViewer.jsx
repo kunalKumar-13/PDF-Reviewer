@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
 import { X, ChevronLeft, ChevronRight, BookOpen, ZoomIn, ZoomOut } from 'lucide-react';
+import { getPDFUrl } from '../api';
 
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
@@ -23,7 +24,7 @@ export default function PDFViewer({ documentId, activeCitation, onClose }) {
   const [loadError, setLoadError] = useState(null);
   const containerRef = useRef(null);
 
-  const pdfUrl = `/api/document/${documentId}/pdf`;
+  const pdfUrl = getPDFUrl(documentId);
 
   // Navigate to the cited page when a citation is clicked
   useEffect(() => {
@@ -56,20 +57,29 @@ export default function PDFViewer({ documentId, activeCitation, onClose }) {
         .replace(/\.\.\.$/,'') // Remove trailing ellipsis
         .trim();
 
-      // Extract significant words (4+ chars) from the snippet for matching
+      const normalize = (value) => value.replace(/[^\w]/g, '').toLowerCase();
+
+      // Extract significant words and compact phrases from the snippet.
       const words = snippet
         .split(/\s+/)
         .filter((w) => w.length >= 4)
-        .map((w) => w.replace(/[^\w]/g, '').toLowerCase())
+        .map(normalize)
         .filter(Boolean);
+      const compactSnippet = normalize(snippet);
+      if (compactSnippet.length >= 6) {
+        words.push(compactSnippet);
+      }
 
       if (words.length === 0) return textItem.str;
 
       const text = textItem.str;
-      const textLower = text.toLowerCase();
+      const textCompact = normalize(text);
+      if (textCompact.length < 2) return text;
 
-      // Check if any significant words match
-      const hasMatch = words.some((word) => textLower.includes(word));
+      // Check if significant words match, including letter-spaced PDF text.
+      const hasMatch = words.some(
+        (word) => textCompact.includes(word) || word.includes(textCompact)
+      );
 
       if (hasMatch) {
         return `<mark class="pdf-highlight">${text}</mark>`;

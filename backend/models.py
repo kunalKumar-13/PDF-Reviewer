@@ -31,12 +31,29 @@ class Citation(BaseModel):
     text_snippet: str
 
 
+class DebugChunk(BaseModel):
+    """Retrieved chunk metadata shown in the frontend debug panel."""
+    page: int
+    section: Optional[str] = None
+    similarity: float
+    keyword_overlap: float
+    combined_score: float
+    text_snippet: str
+
+
+class ChatDebug(BaseModel):
+    """Observability payload for one chat turn."""
+    rewritten_query: str
+    retrieved_chunks: list[DebugChunk]
+
+
 class ChatResponse(BaseModel):
     """Agent response with grounded answer and citations."""
     answer: str
     citations: list[Citation]
     session_id: str
     is_refusal: bool = False
+    debug: Optional[ChatDebug] = None
 
 
 # --- Status ---

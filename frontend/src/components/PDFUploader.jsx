@@ -18,26 +18,29 @@ export default function PDFUploader({
   uploadProgress = 0,
   uploadMessage = '',
   documentInfo = null,
+  disabled = false,
+  disabledMessage = '',
 }) {
   const onDrop = useCallback(
     (acceptedFiles) => {
-      if (acceptedFiles.length > 0) {
+      if (!disabled && acceptedFiles.length > 0) {
         onUpload(acceptedFiles[0]);
       }
     },
-    [onUpload]
+    [disabled, onUpload]
   );
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: { 'application/pdf': ['.pdf'] },
     multiple: false,
-    disabled: uploadState === 'uploading',
+    disabled: disabled || uploadState === 'uploading',
   });
 
   const isProcessing = uploadState === 'uploading';
   const isSuccess = uploadState === 'success';
   const isError = uploadState === 'error';
+  const isDisabled = disabled && !isProcessing;
 
   return (
     <div className="w-full max-w-2xl mx-auto animate-fade-in-up">
@@ -55,7 +58,7 @@ export default function PDFUploader({
                 ? 'border-error/40 bg-error/5'
                 : 'border-border hover:border-border-hover hover:bg-bg-tertiary/50'
           }
-          ${isProcessing ? 'pointer-events-none opacity-80' : ''}
+          ${isProcessing || isDisabled ? 'pointer-events-none opacity-80' : ''}
         `}
       >
         <input {...getInputProps()} id="pdf-file-input" />
@@ -63,6 +66,8 @@ export default function PDFUploader({
         {/* Icon */}
         <div className="flex justify-center mb-4">
           {isProcessing ? (
+            <Loader className="w-12 h-12 text-accent animate-spin" />
+          ) : isDisabled ? (
             <Loader className="w-12 h-12 text-accent animate-spin" />
           ) : isSuccess ? (
             <CheckCircle className="w-12 h-12 text-success" />
@@ -79,6 +84,8 @@ export default function PDFUploader({
         <p className="text-lg font-medium text-text-primary mb-1">
           {isProcessing
             ? 'Processing your PDF...'
+            : isDisabled
+              ? 'Waking backend...'
             : isSuccess
               ? 'PDF Ready!'
               : isError
@@ -92,6 +99,8 @@ export default function PDFUploader({
         <p className="text-sm text-text-muted">
           {isProcessing
             ? uploadMessage || `Uploading... ${uploadProgress}%`
+            : isDisabled
+              ? disabledMessage || 'Server is starting. Upload will be available shortly.'
             : isSuccess && documentInfo
               ? `${documentInfo.total_pages} pages • ${documentInfo.total_chunks} chunks indexed`
               : isError
