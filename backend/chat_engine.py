@@ -246,7 +246,7 @@ def _format_sources(citations: list[dict]) -> str:
             f"* Page {citation['page']}: {citation['text_snippet']}"
         )
 
-    return "\n\n".join([source_lines[0], "\n".join(source_lines[1:])])
+    return "\n".join(source_lines)
 
 
 def _strip_sources_block(answer: str) -> str:

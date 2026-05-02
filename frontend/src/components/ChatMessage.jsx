@@ -29,7 +29,7 @@ export default function ChatMessage({ role, content, citations = [], isRefusal =
     >
       <div
         className={`
-          max-w-[80%] rounded-2xl px-5 py-3.5
+          relative max-w-[82%] rounded-2xl px-5 py-3.5
           ${isUser
             ? 'bg-user-bubble text-white rounded-br-md'
             : isRefusal
@@ -39,30 +39,28 @@ export default function ChatMessage({ role, content, citations = [], isRefusal =
         `}
       >
         {!isUser && (
-          <div className="mb-2 flex justify-end">
-            <button
-              type="button"
-              onClick={handleDownload}
-              className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] text-text-muted hover:bg-bg-tertiary hover:text-text-primary transition-colors"
-              title="Download this response"
-            >
-              <Download className="w-3 h-3" />
-              Download
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={handleDownload}
+            className="absolute right-3 top-2 inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] text-text-muted opacity-70 hover:bg-bg-tertiary hover:text-text-primary hover:opacity-100 transition-colors"
+            title="Download this response"
+          >
+            <Download className="w-3 h-3" />
+            Download
+          </button>
         )}
 
         {/* Message content */}
-        <div className={`text-sm leading-relaxed ${isUser ? 'text-white' : 'text-text-primary'}`}>
+        <div className={`text-sm leading-relaxed ${isUser ? 'text-white' : 'text-text-primary pr-16'}`}>
           {isUser ? (
             <p>{content}</p>
           ) : (
             <ReactMarkdown
               components={{
-                p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
-                ul: ({ children }) => <ul className="list-disc list-inside mb-2 space-y-1">{children}</ul>,
+                p: ({ children }) => <p className="mb-2 last:mb-0 whitespace-pre-wrap">{children}</p>,
+                ul: ({ children }) => <ul className="list-disc pl-5 mb-2 space-y-1">{children}</ul>,
                 ol: ({ children }) => <ol className="list-decimal list-inside mb-2 space-y-1">{children}</ol>,
-                li: ({ children }) => <li className="text-text-primary">{children}</li>,
+                li: ({ children }) => <li className="text-text-primary leading-relaxed">{children}</li>,
                 strong: ({ children }) => <strong className="font-semibold text-text-primary">{children}</strong>,
                 code: ({ children }) => (
                   <code className="px-1.5 py-0.5 bg-bg-tertiary rounded text-accent-light text-xs font-mono">

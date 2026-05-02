@@ -29,6 +29,7 @@ export default function App() {
   const [documentInfo, setDocumentInfo] = useState(null);
   const [backendStatus, setBackendStatus] = useState('checking');
   const [backendMessage, setBackendMessage] = useState('Waking backend...');
+  const [backendCheckId, setBackendCheckId] = useState(0);
 
   // PDF Viewer state
   const [showPdfViewer, setShowPdfViewer] = useState(false);
@@ -79,19 +80,17 @@ export default function App() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [backendCheckId]);
 
   // --- PDF Upload ---
   const handleUpload = async (file) => {
-    if (backendStatus !== 'ready') {
-      setUploadState('error');
-      setUploadMessage(backendMessage);
-      return;
-    }
-
     setUploadState('uploading');
     setUploadProgress(0);
-    setUploadMessage('Processing PDF...');
+    setUploadMessage(
+      backendStatus === 'ready'
+        ? 'Processing PDF...'
+        : 'Starting backend and processing PDF...'
+    );
 
     try {
       const result = await uploadPDF(file, (progress) => {
@@ -226,6 +225,19 @@ export default function App() {
                 {backendReady ? 'Backend ready' : 'Waking backend...'}
               </span>
             </div>
+            {backendStatus === 'error' && (
+              <button
+                type="button"
+                onClick={() => {
+                  setBackendStatus('checking');
+                  setBackendMessage('Waking backend...');
+                  setBackendCheckId((value) => value + 1);
+                }}
+                className="hidden sm:inline-flex items-center px-3 py-1.5 rounded-lg bg-bg-tertiary text-xs text-text-secondary hover:text-text-primary transition-colors"
+              >
+                Retry backend
+              </button>
+            )}
 
             {hasDocument && documentInfo && (
               <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-success/10 border border-success/20">
@@ -278,7 +290,7 @@ export default function App() {
                 uploadProgress={uploadProgress}
                 uploadMessage={uploadMessage}
                 documentInfo={documentInfo}
-                disabled={!backendReady}
+                disabled={false}
                 disabledMessage={backendMessage}
               />
 
@@ -373,7 +385,11 @@ export default function App() {
           ) : (
             /* --- Chat View --- */
             <div className="flex-1 flex min-h-0">
-              <aside className="hidden lg:flex w-72 flex-shrink-0 flex-col border-r border-border bg-bg-secondary/40">
+              <aside
+                className={`${
+                  showPdfViewer ? 'hidden' : 'hidden lg:flex'
+                } w-72 flex-shrink-0 flex-col border-r border-border bg-bg-secondary/40`}
+              >
                 <div className="border-b border-border p-4">
                   <div className="flex items-center gap-2">
                     <MessageSquare className="w-4 h-4 text-accent" />
@@ -469,7 +485,7 @@ export default function App() {
                               key={query}
                               type="button"
                               onClick={() => handleSend(query)}
-                              disabled={isLoading || !backendReady}
+                              disabled={isLoading}
                               className="px-3 py-1.5 rounded-full bg-bg-tertiary text-xs text-text-secondary hover:text-text-primary hover:border-accent/30 border border-border transition-colors disabled:opacity-50"
                             >
                               {query}
@@ -503,7 +519,7 @@ export default function App() {
                   <div className="max-w-3xl mx-auto">
                     <ChatInput
                       onSend={handleSend}
-                      disabled={!hasDocument || !backendReady}
+                      disabled={!hasDocument}
                       isLoading={isLoading}
                     />
                     <p className="text-center text-[10px] text-text-muted mt-2">
@@ -518,7 +534,7 @@ export default function App() {
 
         {/* PDF Viewer Panel (side-by-side) */}
         {showPdfViewer && hasDocument && (
-          <aside className="w-[45%] min-w-[360px] max-w-[600px] flex-shrink-0">
+          <aside className="w-[42%] min-w-[360px] max-w-[560px] flex-shrink-0">
             <PDFViewer
               documentId={documentId}
               activeCitation={activeCitation}
